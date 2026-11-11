@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>Theodicy Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout: one working surface per tool. Sorter = statement bank beside heading boxes; Narrative = beat list beside a writing desk. Accent switches with the theodicy: oxblood for Augustine's fall, green for Irenaeus's growth. */
+:root{
+  --bg:#F2F4F7; --surface:#FFFFFF; --sunk:#E9EDF2; --ink:#1A2130; --muted:#586174; --line:#D6DCE5;
+  --aug:#8A2E3E; --ire:#2C6B4E;
+  --good:#23794A; --ok:#A86A12; --bad:#B8362A;
+  --acc:var(--aug); --on-acc:#FFFFFF;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#10141B; --surface:#19202A; --sunk:#141A22; --ink:#E8ECF3; --muted:#9BA6B8; --line:#2D3644;
+  --aug:#E8909E; --ire:#74C9A0; --good:#5FCB8D; --ok:#E8B25A; --bad:#F07F72; --on-acc:#10141B; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#10141B; --surface:#19202A; --sunk:#141A22; --ink:#E8ECF3; --muted:#9BA6B8; --line:#2D3644;
+  --aug:#E8909E; --ire:#74C9A0; --good:#5FCB8D; --ok:#E8B25A; --bad:#F07F72; --on-acc:#10141B; color-scheme:dark }
+body[data-theo="ire"]{ --acc:var(--ire) }
+body{ background:var(--bg); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.5 }
+*{ box-sizing:border-box }
+:root{ --acc-soft:color-mix(in srgb, var(--acc) 13%, var(--surface)); --good-soft:color-mix(in srgb, var(--good) 13%, var(--surface)); --ok-soft:color-mix(in srgb, var(--ok) 15%, var(--surface)); --bad-soft:color-mix(in srgb, var(--bad) 12%, var(--surface)) }
+body *{ --acc-soft:color-mix(in srgb, var(--acc) 13%, var(--surface)); --good-soft:color-mix(in srgb, var(--good) 13%, var(--surface)); --ok-soft:color-mix(in srgb, var(--ok) 15%, var(--surface)); --bad-soft:color-mix(in srgb, var(--bad) 12%, var(--surface)) }
+button{ font:inherit; color:inherit }
+:focus-visible{ outline:3px solid var(--acc); outline-offset:2px }
+.wrap{ max-width:1200px; margin:0 auto; padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:22px 140px }
+
+/* header */
+.top{ display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px 24px; margin-bottom:18px }
+.brand h1{ font-family:var(--display); font-weight:800; font-size:clamp(26px, 4vw, 36px); line-height:1.05; margin:0; letter-spacing:-0.01em; text-wrap:balance }
+.brand h1 span{ color:var(--acc) }
+.brand p{ margin:4px 0 0; color:var(--muted) }
+.controls{ display:flex; flex-wrap:wrap; gap:10px }
+.seg{ display:inline-flex; background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:3px; gap:2px }
+.seg button{ border:0; background:none; padding:8px 15px; border-radius:999px; font-weight:600; color:var(--muted); cursor:pointer; white-space:nowrap }
+.seg button:hover{ color:var(--ink) }
+.seg button[aria-pressed="true"]{ background:var(--acc); color:var(--on-acc) }
+.seg.theo button[data-theo="aug"][aria-pressed="true"]{ background:var(--aug) }
+.seg.theo button[data-theo="ire"][aria-pressed="true"]{ background:var(--ire) }
+
+.intro{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:18px; display:flex; flex-wrap:wrap; gap:10px 24px; align-items:center; justify-content:space-between }
+.intro p{ margin:0; max-width:70ch }
+.intro strong{ font-weight:700 }
+
+.btn{ border:1px solid var(--line); background:var(--surface); padding:8px 14px; border-radius:8px; font-weight:600; cursor:pointer }
+.btn:hover{ border-color:var(--acc) }
+.btn.primary{ background:var(--acc); border-color:var(--acc); color:var(--on-acc) }
+.btn.warn{ border-color:var(--bad); color:var(--bad) }
+.btn:disabled{ opacity:.45; cursor:not-allowed }
+.btnrow{ display:flex; flex-wrap:wrap; gap:8px }
+
+/* sorter */
+.sortgrid{ display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:20px; align-items:start }
+.panel-h{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin:0 0 10px }
+.panel-h h2{ font-family:var(--display); font-size:20px; margin:0 }
+.panel-h .count{ color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums }
+.bank{ background:var(--sunk); border:1px solid var(--line); border-radius:14px; padding:12px; position:sticky; top:12px; max-height:calc(100vh - 24px); overflow:auto }
+.bank.drop, .box.drop{ border-color:var(--acc); background:var(--acc-soft) }
+.stack{ display:flex; flex-direction:column; gap:8px }
+.empty{ color:var(--muted); font-style:italic; padding:8px 4px; margin:0 }
+.card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:10px 12px; display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 10px; cursor:pointer; user-select:none; transition:box-shadow .15s }
+.card:hover{ box-shadow:0 2px 8px color-mix(in srgb, var(--ink) 10%, transparent) }
+.card[draggable="true"]{ cursor:grab }
+.card.sel{ outline:3px solid var(--acc); outline-offset:1px }
+.num{ font-family:var(--display); font-weight:700; width:30px; height:30px; border-radius:8px; background:var(--acc-soft); color:var(--acc); display:grid; place-items:center; font-size:15px; font-variant-numeric:tabular-nums }
+.ctext{ font-size:15px; line-height:1.45 }
+.cfoot{ grid-column:2; display:flex; flex-wrap:wrap; gap:6px; align-items:center }
+.mini{ border:1px solid var(--line); background:var(--surface); border-radius:6px; padding:2px 8px; font-size:13px; font-weight:600; cursor:pointer; color:var(--muted) }
+.mini:hover{ color:var(--ink); border-color:var(--acc) }
+.mini[aria-pressed="true"]{ background:var(--acc); color:var(--on-acc); border-color:var(--acc) }
+.fb{ grid-column:1 / -1; font-size:14px; border-radius:7px; padding:6px 9px; display:flex; gap:7px; align-items:flex-start }
+.fb b{ flex:none }
+.card.good{ border-color:var(--good); background:var(--good-soft) }
+.card.ok{ border-color:var(--ok); background:var(--ok-soft) }
+.card.bad{ border-color:var(--bad); background:var(--bad-soft) }
+.card.good .fb{ color:var(--good) } .card.ok .fb{ color:var(--ok) } .card.bad .fb{ color:var(--bad) }
+.card.hinted{ outline:3px dashed var(--ok); outline-offset:1px }
+.card.hinted .fb.hint{ color:var(--ink); background:var(--ok-soft) }
+.boxes{ display:flex; flex-direction:column; gap:12px }
+.box{ background:var(--surface); border:1.5px dashed var(--line); border-radius:14px; padding:12px; transition:background .15s, border-color .15s }
+.box.target{ cursor:pointer; border-style:solid; border-color:color-mix(in srgb, var(--acc) 55%, var(--line)) }
+.box.target:hover{ background:var(--acc-soft) }
+.box h3{ font-family:var(--display); font-size:17px; margin:0 0 8px; display:flex; justify-content:space-between; gap:10px }
+.box h3 small{ font-family:var(--body); font-weight:600; color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums }
+.box .stack:empty::after{ content:"Drop statements here"; color:var(--muted); font-size:14px; font-style:italic; padding:6px 2px }
+.order{ margin:8px 0 0; font-size:14px; color:var(--muted); background:var(--sunk); border-radius:8px; padding:7px 10px }
+.order b{ color:var(--ink) }
+
+.status{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:14px; display:flex; flex-direction:column; gap:10px }
+.tally{ display:flex; flex-wrap:wrap; gap:8px }
+.pill{ display:inline-flex; align-items:center; gap:6px; border-radius:999px; padding:3px 11px; font-size:14px; font-weight:600; background:var(--sunk); font-variant-numeric:tabular-nums }
+.pill.g{ background:var(--good-soft); color:var(--good) } .pill.o{ background:var(--ok-soft); color:var(--ok) } .pill.b{ background:var(--bad-soft); color:var(--bad) }
+.msg{ margin:0; font-size:15px }
+.msg.win{ color:var(--good); font-weight:600 }
+
+#movebar{ position:fixed; left:0; right:0; bottom:0; z-index:30; background:var(--surface); border-top:2px solid var(--acc); box-shadow:0 -6px 24px color-mix(in srgb, var(--ink) 14%, transparent);
+  padding:10px max(16px, env(safe-area-inset-right, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)) }
+#movebar .inner{ max-width:1200px; margin:0 auto; display:flex; flex-direction:column; gap:8px }
+#movebar .what{ font-size:14px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+#movebar .what b{ color:var(--acc) }
+#movebar .chips{ display:flex; flex-wrap:wrap; gap:6px }
+#movebar .chips button{ border:1px solid var(--line); background:var(--acc-soft); border-radius:999px; padding:6px 12px; font-weight:600; font-size:14px; cursor:pointer }
+#movebar .chips button:hover{ border-color:var(--acc) }
+#movebar .chips button.plain{ background:var(--surface); color:var(--muted) }
+
+/* narrative */
+.narr{ display:grid; grid-template-columns:250px minmax(0,1fr); gap:20px; align-items:start }
+.beats{ display:flex; flex-direction:column; gap:4px; position:sticky; top:12px }
+.beats button{ text-align:left; border:1px solid transparent; background:none; border-radius:9px; padding:8px 10px; cursor:pointer; display:grid; grid-template-columns:26px minmax(0,1fr) auto; gap:8px; align-items:center }
+.beats button:hover{ background:var(--surface) }
+.beats button[aria-current="true"]{ background:var(--surface); border-color:var(--line); font-weight:700 }
+.beats .bn{ width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-family:var(--display); font-weight:700; font-size:13px; background:var(--sunk); color:var(--muted) }
+.beats button[aria-current="true"] .bn{ background:var(--acc); color:var(--on-acc) }
+.beats .done{ width:9px; height:9px; border-radius:50%; background:var(--line) }
+.beats .done.on{ background:var(--good) }
+.beats .sep{ height:1px; background:var(--line); margin:6px 4px }
+.desk{ display:flex; flex-direction:column; gap:14px; min-width:0 }
+.tracker{ background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; display:grid; grid-template-columns:minmax(180px, 1fr) minmax(0, 2.2fr); gap:12px 20px }
+.tracker h4{ margin:0 0 6px; font-size:12px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted) }
+.meter{ height:10px; border-radius:99px; background:var(--sunk); position:relative; overflow:hidden }
+.meter i{ position:absolute; inset:0 auto 0 0; background:var(--muted); border-radius:99px; transition:width .2s }
+.meter.in i{ background:var(--good) } .meter.over i{ background:var(--ok) }
+.meter::before{ content:""; position:absolute; left:calc(300/450*100%); width:calc(100/450*100%); top:0; bottom:0; background:color-mix(in srgb, var(--good) 22%, transparent) }
+.wcline{ font-size:14px; margin-top:6px; font-variant-numeric:tabular-nums }
+.terms{ display:flex; flex-wrap:wrap; gap:6px }
+.term{ font-size:13.5px; font-weight:600; border-radius:999px; padding:3px 10px; border:1px dashed var(--line); color:var(--muted) }
+.term.on{ border:1px solid var(--good); background:var(--good-soft); color:var(--good) }
+.term.on::before{ content:"✓ " }
+.sheet{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 20px }
+.sheet .eyebrow{ font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--acc); font-weight:700; margin:0 }
+.sheet h2{ font-family:var(--display); font-size:clamp(22px, 3vw, 28px); margin:2px 0 8px; text-wrap:balance }
+.qs{ margin:0 0 14px; padding-left:20px; color:var(--ink) }
+.qs li{ margin-bottom:4px }
+details{ border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--bg) }
+details > summary{ cursor:pointer; padding:9px 12px; font-weight:700; list-style:none; display:flex; justify-content:space-between; gap:10px }
+details > summary::-webkit-details-marker{ display:none }
+details > summary::after{ content:"Show"; font-weight:600; font-size:13px; color:var(--acc) }
+details[open] > summary::after{ content:"Hide" }
+details > summary small{ font-weight:400; color:var(--muted) }
+.dbody{ padding:2px 14px 12px }
+.ideas{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px }
+.ideas label{ display:grid; grid-template-columns:20px minmax(0,1fr); gap:8px; cursor:pointer }
+.ideas input{ width:18px; height:18px; margin-top:3px; accent-color:var(--acc) }
+.ideas input:checked + span{ color:var(--muted); text-decoration:line-through; text-decoration-color:color-mix(in srgb, var(--muted) 60%, transparent) }
+blockquote{ margin:10px 0 0; padding:8px 12px; border-left:3px solid var(--acc); background:var(--surface); border-radius:0 8px 8px 0; font-style:italic }
+.note{ font-size:14px; color:var(--muted); margin:8px 0 0 }
+.starters{ margin:0; padding-left:20px } .starters li{ font-style:italic; margin-bottom:4px }
+.write label{ display:block; font-weight:700; margin:14px 0 6px }
+textarea{ width:100%; min-height:190px; resize:vertical; border:1px solid var(--line); border-radius:10px; padding:12px; font:inherit; font-size:16px; line-height:1.6; background:var(--surface); color:var(--ink) }
+textarea:focus{ outline:none; border-color:var(--acc); box-shadow:0 0 0 3px var(--acc-soft) }
+.wbar{ display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:14px; color:var(--muted); margin-top:6px }
+.nav{ display:flex; justify-content:space-between; gap:10px; margin-top:16px; flex-wrap:wrap }
+.whole p.para{ margin:0 0 12px; max-width:72ch; line-height:1.65 }
+.whole p.gap{ color:var(--bad); font-style:italic }
+.crit{ list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:6px }
+.crit label{ display:grid; grid-template-columns:20px minmax(0,1fr); gap:8px; cursor:pointer }
+.crit input{ width:18px; height:18px; margin-top:3px; accent-color:var(--acc) }
+.callout{ background:var(--acc-soft); border-radius:10px; padding:12px 14px; margin-top:14px }
+.copyfb{ font-size:14px; color:var(--good); font-weight:600 }
+#copyarea{ margin-top:10px; min-height:120px }
+
+@media (max-width: 860px){
+  .sortgrid{ grid-template-columns:minmax(0,1fr) }
+  .bank{ position:static; max-height:none }
+  .narr{ grid-template-columns:minmax(0,1fr) }
+  .beats{ position:static; flex-direction:row; flex-wrap:wrap }
+  .beats button{ grid-template-columns:26px auto; padding:6px 8px }
+  .beats .bt, .beats .done, .beats .sep{ display:none }
+  .tracker{ grid-template-columns:minmax(0,1fr) }
+}
+@media (prefers-reduced-motion: reduce){ *{ transition:none !important } }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Theodicy <span>Builder</span></h1>
+      <p>The problem of evil: Augustine and Irenaeus/Hick</p>
+    </div>
+    <div class="controls">
+      <div class="seg theo" role="group" aria-label="Theodicy">
+        <button data-theo="aug">Augustine</button>
+        <button data-theo="ire">Irenaeus &amp; Hick</button>
+      </div>
+      <div class="seg tool" role="group" aria-label="Tool">
+        <button data-tool="narr">Plan the narrative</button>
+        <button data-tool="sort">Sort the statements</button>
+      </div>
+    </div>
+  </header>
+  <main id="main"></main>
+</div>
+<div id="movebar" hidden></div>
+
+<script>
+const D = {
+aug: {
+  name: "Augustine", task: 3, narrTask: 1,
+  headings: ["What is evil?", "Did God create evil?", "Where does moral evil come from?", "Where does natural evil come from?", "Why does God allow evil?", "Is there a way out?", "Conclusion"],
+  short: ["What is evil?", "Did God create evil?", "Moral evil", "Natural evil", "Why God allows evil", "Way out", "Conclusion"],
+  order: [[12,2,18,13],[20,7,16],[4,6,11,15,5,8,1],[3,10],[14,19],[9],[17]],
+  orderNotes: {3: "Statements 3 and 10 say the same thing. In an essay you would use only one: 10 explains it more fully."},
+  st: {
+    1:{t:"Augustine said that “the free choice of the will is the reason why we do wrong and suffer your just judgement.”", best:2, also:[4], hint:"Look at “the free choice of the will”. What does it say is the source of our wrongdoing?", alt:"It mentions “just judgement”, which links to why God allows evil, but its main point is where wrongdoing comes from."},
+    2:{t:"Evil is not a substance or entity — it cannot be created because it is not a “thing” in itself.", best:0, also:[1], hint:"Is this mainly telling you what evil is, or who made it?", alt:"It does show God didn't create evil, but first it tells you what evil is. Which comes first in the argument?"},
+    3:{t:"The whole order of nature was subverted by the sin of man. (Calvin)", best:3, hint:"“The whole order of nature”: which kind of evil is about the natural world?"},
+    4:{t:"God created humans with free will, allowing them to make genuine moral choices.", best:2, hint:"Free will is where the evil that humans choose to do begins."},
+    5:{t:"Augustine taught that we were “seminally present in Adam,” meaning that we all share in the fallen nature of humanity.", best:2, hint:"This explains why Adam's sin affects all of us. Is that about the evil humans do, or about nature?"},
+    6:{t:"Evil and suffering arise when humans and angels choose to go against God's will.", best:2, hint:"Who is doing the choosing here? What kind of evil is chosen?"},
+    7:{t:"“I saw and it was made clear to me that you [God] made all things good.” (Augustine)", best:1, hint:"If God made all things good, what does that tell you about whether he made evil?"},
+    8:{t:"The Fall corrupted human nature, and we continue to turn away from God.", best:2, hint:"A corrupted human nature keeps us turning away from God. Which heading is about our wrong choices?"},
+    9:{t:"Redemption comes through accepting Jesus Christ as Saviour: “…in Christ your Son our Lord… you have provided a way of salvation whereby humanity can come to the future life after death.”", best:5, hint:"Redemption and salvation: this is the escape route."},
+    10:{t:"Calvin said “the whole order of nature was subverted by the sin of man,” suggesting that even natural evils come from the Fall.", best:3, hint:"Compare it with statement 3. It says almost the same thing."},
+    11:{t:"Evil began with the Fall — humanity's first disobedience to God (Original Sin).", best:2, hint:"The first disobedience is the origin of human wrongdoing."},
+    12:{t:"Evil is a privation of good — a lack or absence of goodness.", best:0, hint:"This is Augustine's definition of evil."},
+    13:{t:"“If I have a hole in my sock, the hole is not anything at all; it is just an absence of wool or cotton or whatever.” (Herbert McCabe)", best:0, hint:"It's an analogy. What does the hole in the sock show about the nature of evil?"},
+    14:{t:"God permits evil to persist as a just punishment and as a reminder of our need for divine grace.", best:4, hint:"Look for the two reasons it gives: “just punishment” and “reminder”."},
+    15:{t:"St Paul wrote, “Sin entered the world through one man.” (Romans 5:12)", best:2, hint:"Paul's words back up the idea that sin came into the world through Adam."},
+    16:{t:"God did not create evil, because God created all things good — and evil is not a thing.", best:1, hint:"Read it again. It answers one of the headings almost word for word."},
+    17:{t:"In summary, Augustine's theodicy teaches that evil is the absence of good, caused by the misuse of free will, and that redemption is possible through Christ.", best:6, hint:"It starts “In summary…”"},
+    18:{t:"Evil is a real experience, but only as a corruption or lack of something that should be good.", best:0, hint:"Is evil real? This tells you in what sense it is."},
+    19:{t:"God remains wholly good, even though He allows evil as a consequence of freedom and justice.", best:4, also:[6], hint:"God allows evil but stays good. Which question does that answer?", alt:"It could round off the argument, but it really answers why God allows evil."},
+    20:{t:"God created a perfect world, in which everything was originally good.", best:1, hint:"A perfect beginning. What does that show about whether God made evil?"}
+  },
+  notIren: [],
+  beats: [
+    {title:"A perfect beginning", q:["What was the world like when God made it?","Is there any evil in it?"],
+     ideas:["God created everything, and everything he created was good.","At the start there was no evil or suffering: creation was in harmony.","Angels and humans lived in a right relationship with God."],
+     terms:[], quote:"“I saw and it was made clear to me that you [God] made all things good.” (Augustine)",
+     starters:["In the beginning, everything God made was…","There was no evil anywhere, because…"]},
+    {title:"A gift with a risk", q:["What did God give to angels and humans?","Why does it matter for what happens next?"],
+     ideas:["God gave angels and humans free will.","Free will makes real moral choice possible, so goodness can be freely chosen.","Freedom carries a risk: free creatures can choose to turn away from God."],
+     terms:["free will"], quote:null,
+     starters:["God wanted… so he gave…","This gift came with a risk, because…"]},
+    {title:"Everything goes wrong", q:["What happened, and who did it?","Why does it affect us, not just Adam?"],
+     ideas:["Some angels, and then Adam and Eve, chose to disobey God. This is the Fall.","That first disobedience is Original Sin.","Everyone was “seminally present in Adam”, so we all share his fallen nature.","Human nature is now corrupted, so we keep turning away from God. This is moral evil."],
+     terms:["the Fall","Original Sin","seminally present"], quote:"“Sin entered the world through one man.” (Romans 5:12)",
+     starters:["But then…","Because we were all seminally present in Adam, …"]},
+    {title:"What evil actually is", q:["If God made everything good, how can evil exist at all?","Use an analogy."],
+     ideas:["Evil is not a thing or a substance, so God could not have created it.","Evil is a privation of good: a lack of the goodness that should be there.","Evil is real as an experience, but only as a corruption of something good.","Analogy: blindness is a lack of sight; a hole in a sock is a lack of wool."],
+     terms:["privation"], quote:"“If I have a hole in my sock, the hole is not anything at all; it is just an absence of wool or cotton or whatever.” (Herbert McCabe)",
+     starters:["So if God made everything good, where did evil come from? …","Evil is not something God made. Instead, it is…"]},
+    {title:"The world falls apart too", q:["How does Augustine, backed up by Calvin, explain earthquakes, disease and other natural evils?"],
+     ideas:["The Fall damaged more than human beings: it disrupted the whole natural order.","Natural evils such as earthquakes and disease are a consequence of human sin.","Calvin later supported this view."],
+     terms:["the Fall"], quote:"“The whole order of nature was subverted by the sin of man.” (Calvin)",
+     starters:["The damage did not stop with humans: …","This is why natural disasters happen, because…"]},
+    {title:"Why God lets it continue", q:["What are the two reasons God allows evil to continue?","Is God being unfair?"],
+     ideas:["Reason 1: suffering is a just punishment, because all humans share Adam's sin.","Reason 2: it reminds us that we need God's grace.","God is not unfair: evil follows from the freedom he gave and from his justice, so God remains wholly good."],
+     terms:["just punishment","grace"], quote:"“…the free choice of the will is the reason why we do wrong and suffer your just judgement.” (Augustine)",
+     starters:["God allows evil to continue for two reasons. First, …","This does not make God unfair, because…"]},
+    {title:"The way out", q:["How can humans be rescued?","What do they need from God that they cannot do for themselves?"],
+     ideas:["Because our will is corrupted, we cannot save ourselves.","Only God's grace can rescue us.","Through Jesus Christ, God offers salvation and a future life after death.","End by summing up: evil is the absence of good, caused by the misuse of free will, and redemption comes through Christ."],
+     terms:["grace","Christ"], quote:"“…in Christ your Son our Lord… you have provided a way of salvation whereby humanity can come to the future life after death.”",
+     starters:["There is still hope, because…","In the end, …"]}
+  ],
+  must:[["privation",/privation/i],["free will",/free[ -]?will/i],["the Fall",/\bfall\b|\bfallen\b/i],["Original Sin",/original sin/i],["seminally present",/seminal/i],["just punishment",/just(ly)? punish/i],["grace",/\bgrace\b/i],["Christ",/christ|jesus/i]],
+  crit:["Every beat is covered, in a logical order","At least six of the key terms, used correctly","At least two short quotations, with who said them","The story explains why God is not to blame for evil","Connectives show cause and effect (because, therefore, as a result, this means)"],
+  challenge:"Write one paragraph of your story from the point of view of a critic who thinks the story doesn't add up. Where is the weakest link?"
+},
+ire: {
+  name: "Irenaeus & Hick", task: 4, narrTask: 2,
+  headings: ["What is evil and suffering for?", "Did God create evil?", "Where does moral evil come from?", "Where does natural evil come from?", "Why doesn't God simply put a stop to evil?", "What is free will for?", "Is there a way out?", "Conclusion"],
+  short: ["What is evil for?", "Did God create evil?", "Moral evil", "Natural evil", "Why God doesn't stop it", "What free will is for", "Way out", "Conclusion"],
+  order: [[6,1,15,18,16],[14,2,11],[10,4],[8],[17,5],[13],[9,3,12],[7]],
+  orderNotes: {},
+  st: {
+    1:{t:"“A world without problems, difficulties, perils, and hardships would be morally static. For moral and spiritual growth comes through response to challenges; and in a paradise there would be no challenges.” (Hick)", best:0, also:[3], hint:"“Morally static”: what would be missing in a world without hardship? What is the hardship for?", alt:"Hardships and perils include natural evil, but the main point is what suffering is for."},
+    2:{t:"God created evil and suffering.", best:1, also:[3], hint:"This answers one heading directly, and it's the opposite of Augustine's answer.", alt:"True of natural evil, but it answers a bigger question directly."},
+    3:{t:"We only achieve moral and spiritual perfection in the afterlife (Heaven).", best:6, hint:"Where and when is the journey finally completed?"},
+    4:{t:"Humans have free will to choose between good and evil.", best:2, also:[5], hint:"Choosing evil: where does the evil that humans do come from?", alt:"Free will is the subject, but this statement explains where moral evil comes from. Statement 13 says what free will is for."},
+    5:{t:"Hick: God is at an “epistemic distance” — he wants us to choose to love him freely, rather than be forced into loving him like robots.", best:4, also:[5], hint:"Epistemic distance explains why God holds back and stays hidden.", alt:"It's linked to free will, but its main point is why God keeps his distance and doesn't step in."},
+    6:{t:"Evil and suffering are necessary for spiritual growth.", best:0, hint:"“Necessary for…”: this is about the purpose of suffering."},
+    7:{t:"In summary, the Irenaean theodicy teaches that evil and suffering belong to a world designed for soul-making, in which free creatures grow from God's image into his likeness, and that (for Hick) all will finally reach perfection.", best:7, hint:"It starts “In summary…”"},
+    8:{t:"God created the world with natural evil in it.", best:3, also:[1], hint:"Earthquakes, disease, famine: which kind of evil is this?", alt:"It does show God created evil, but it is the only statement that explains natural evil."},
+    9:{t:"Redemption comes through our own choices and actions in the face of evil and suffering.", best:6, hint:"Redemption is the route to the end goal."},
+    10:{t:"Humans were created imperfect — made in God's image, but not yet in his likeness.", best:2, also:[5], hint:"Immature, unfinished creatures make mistakes. How does that help explain the wrong humans do?", alt:"Image and likeness link to growth, but here the point is that imperfect humans do wrong."},
+    11:{t:"Leibniz: this world, which contains evil, is the best of all possible worlds for humans, because it gives us the opportunity for moral and spiritual growth.", best:1, also:[0], hint:"If this is the best possible world, God chose to make it with evil in it. Also, whose idea is this?", alt:"It mentions growth, but the main claim is about the kind of world God chose to create."},
+    12:{t:"Hick (not Irenaeus): everyone goes to Heaven — “…this infinite future good will render worthwhile all the pain and travail and wickedness that has occurred on the way to it.”", best:6, hint:"Heaven for everyone: this is where the journey ends."},
+    13:{t:"Free will allows us to grow morally and spiritually — to grow into God's likeness and become “children of God” (Hick).", best:5, hint:"Read the first four words. This tells you what free will is for."},
+    14:{t:"God created the world for the purpose of soul-making.", best:1, also:[0], hint:"God made the world this way on purpose. What does that say about whether he created evil?", alt:"Soul-making is also the purpose of suffering, but this statement is about why God made the world as he did."},
+    15:{t:"Humans need to encounter evil in order to grow morally and spiritually — for example, we cannot become courageous without real danger.", best:0, hint:"Courage needs danger. So what is evil for?"},
+    16:{t:"Good can arise out of evil.", best:0, hint:"Good coming from evil: this is about the purpose of suffering."},
+    17:{t:"Hick's free will defence: God does not intervene because he wants us to be free and autonomous rather than act like robots. We should act as if there were no God (etsi deus non daretur).", best:4, also:[5], hint:"“God does not intervene”: which question does that answer?", alt:"It's about freedom, but its main point is why God doesn't step in."},
+    18:{t:"“…the capacity for love [agape] would never be developed, except in a very limited sense of the word, in a world in which there was no such thing as suffering.” (Hick)", best:0, hint:"Agape can only develop if there is suffering. So what is suffering for?"}
+  },
+  notIren: [11,12],
+  notIrenWho: {11:"Leibniz", 12:"Hick"},
+  beats: [
+    {title:"An unfinished creation", q:["How were humans made?","What is the difference between God's image and his likeness?"],
+     ideas:["Irenaeus (2nd century) said humans were created imperfect and immature, like children.","They were made in God's image, with intelligence and the capacity for moral and spiritual life.","They were not yet in his likeness: the moral and spiritual perfection they still have to grow into.","So creation is unfinished on purpose: humanity has a journey to make."],
+     terms:["image","likeness"], quote:"“Let us make man in our image, after our likeness.” (Genesis 1:26) Irenaeus based the image/likeness distinction on this verse.",
+     starters:["Unlike Augustine's perfect beginning, …","Being made in God's image means… but not yet his likeness, which means…"]},
+    {title:"A world built for a purpose", q:["What kind of world did God deliberately create?","Why does it contain natural evil?"],
+     ideas:["God deliberately made a world with challenges, danger and natural evil in it.","Hick calls its purpose “soul-making”: a world where people can grow.","So God is responsible for evil existing, but for a good reason.","Careful: “the best of all possible worlds” is Leibniz's idea, not Irenaeus's."],
+     terms:["soul-making"], quote:null,
+     starters:["The world was never meant to be a paradise, because…","God is responsible for evil, but…"]},
+    {title:"God keeps his distance", q:["Why doesn't God make his existence obvious?","What would we become if he did?"],
+     ideas:["Hick says God keeps an “epistemic distance”: a distance in knowledge, not in space.","If God's existence were obvious, we would be overwhelmed into obeying and loving him.","Forced love is not real love: we would be like robots.","God's hiddenness gives us room to choose him freely."],
+     terms:["epistemic distance"], quote:null,
+     starters:["God does not make himself obvious, because…","If we could see God clearly, …"]},
+    {title:"The freedom to choose", q:["What is free will for in this story?","Where does moral evil come from?"],
+     ideas:["Humans have free will to choose between good and evil.","Moral evil comes from immature humans making wrong choices.","Free will is for growth: through our choices we grow into God's likeness and become “children of God” (Hick)."],
+     terms:["free will","children of God"], quote:null,
+     starters:["Because humans are still immature, …","Free will is not a mistake: it exists so that…"]},
+    {title:"Growing through struggle", q:["Why would a world without suffering be “morally static”?","Give an example of a virtue that needs hardship to develop."],
+     ideas:["A world without hardship would be “morally static”: there would be nothing to respond to.","Virtues need difficulty: courage needs danger, and compassion needs suffering.","Agape (selfless love) could not develop in a world without suffering.","Good can come out of evil."],
+     terms:["agape","soul-making"], quote:"“…the capacity for love [agape] would never be developed, except in a very limited sense of the word, in a world in which there was no such thing as suffering.” (Hick)",
+     starters:["Imagine a world with no pain or danger: …","For example, nobody could become courageous unless…"]},
+    {title:"Why God doesn't step in", q:["What would be lost if God stopped every evil?"],
+     ideas:["If God stopped every evil, our choices would have no real consequences.","We would not be truly free and autonomous: we would be like robots.","We have to live as if there were no God (etsi deus non daretur), so that our growth is really our own."],
+     terms:["free will"], quote:null,
+     starters:["If God stepped in every time something went wrong, …","Hick's answer is that…"]},
+    {title:"The ending", q:["Where does the journey finish, and for whom?","How does Hick justify all the suffering along the way? (Careful: this part is Hick, not Irenaeus.)"],
+     ideas:["The journey is completed after death: perfection is reached in Heaven.","Redemption comes through our own choices as we respond to evil and suffering.","Hick (not Irenaeus) adds universal salvation: in the end everyone reaches Heaven.","Hick argues that this infinite good makes all the suffering on the way worthwhile.","End by summing up the whole theodicy in a sentence or two."],
+     terms:["universal salvation","likeness"], quote:"“…this infinite future good will render worthwhile all the pain and travail and wickedness that has occurred on the way to it.” (Hick)",
+     starters:["The journey does not end in this life: …","Hick goes further than Irenaeus, arguing that…"]}
+  ],
+  must:[["image",/\bimage\b/i],["likeness",/likeness/i],["soul-making",/soul[- ]?making/i],["epistemic distance",/epistemic/i],["free will",/free[ -]?will/i],["agape",/agape/i],["children of God",/children of god/i],["universal salvation",/universal salvation|universalis/i]],
+  crit:["Every beat is covered, in a logical order","At least six of the key terms, used correctly","At least two short quotations from Hick","You make clear which ideas are Irenaeus's and which are Hick's","The story explains why evil has a purpose, not just a cause"],
+  challenge:"Add an ending paragraph from the perspective of someone who has suffered terribly and doesn't believe it made them a better person. How might Hick reply?"
+}};
+
+/* ---------- state ---------- */
+const KEY = "theodicy-builder-v1";
+function blankSort(t){ return { boxes: D[t].headings.map(() => []), checked: [], flags: [], hintFor: null, hints: 0 }; }
+function blankNarr(){ return { beat: 0, text: Array(7).fill(""), ticks: {}, crit: {} }; }
+function fresh(){ return { theo: "aug", tool: "narr", sort: { aug: blankSort("aug"), ire: blankSort("ire") }, narr: { aug: blankNarr(), ire: blankNarr() } }; }
+let S = fresh();
+try { const raw = localStorage.getItem(KEY); if (raw) { const s = JSON.parse(raw); if (s && s.sort && s.narr) S = Object.assign(fresh(), s); } } catch (e) {}
+let saveT = null;
+function save(){ clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }, 250); }
+let SEL = null, resetArmed = false, resetTimer = null;
+
+const main = document.getElementById("main");
+const movebar = document.getElementById("movebar");
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+
+/* ---------- shell ---------- */
+function render(){
+  document.body.dataset.theo = S.theo;
+  document.querySelectorAll(".seg.theo button").forEach(b => b.setAttribute("aria-pressed", b.dataset.theo === S.theo));
+  document.querySelectorAll(".seg.tool button").forEach(b => b.setAttribute("aria-pressed", b.dataset.tool === S.tool));
+  if (S.tool === "sort") renderSort(); else renderNarr();
+  renderMovebar();
+}
+document.querySelector(".seg.theo").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.theo = b.dataset.theo; SEL = null; save(); render(); });
+document.querySelector(".seg.tool").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; S.tool = b.dataset.tool; SEL = null; save(); render(); });
+
+/* ---------- sorter ---------- */
+function whereIs(st, n){ for (let i = 0; i < st.boxes.length; i++){ const p = st.boxes[i].indexOf(n); if (p > -1) return [i, p]; } return [-1, -1]; }
+function grade(t, n, b){ const s = D[t].st[n]; if (b === s.best) return "good"; if ((s.also || []).includes(b)) return "ok"; return "bad"; }
+
+function cardHTML(t, n, b, pos, len){
+  const d = D[t], s = d.st[n], st = S.sort[t];
+  const checked = b > -1 && st.checked.includes(n);
+  const g = checked ? grade(t, n, b) : "";
+  const hinted = st.hintFor === n;
+  let fb = "";
+  if (g === "good") fb = `<div class="fb"><b>✓</b><span>Best box.${t === "ire" && st.flags.includes(n) && d.notIren.includes(n) ? " And you spotted it isn't Irenaeus (it's " + d.notIrenWho[n] + ")." : ""}</span></div>`;
+  else if (g === "ok") fb = `<div class="fb"><b>~</b><span>Acceptable. ${esc(s.alt || "Is there a better box?")}</span></div>`;
+  else if (g === "bad") fb = `<div class="fb"><b>✗</b><span>Not this box. Hint: ${esc(s.hint)}</span></div>`;
+  if (hinted && g !== "bad") fb += `<div class="fb hint"><b>Hint</b><span>${esc(s.hint)}</span></div>`;
+  let flagNote = "";
+  if (checked && t === "ire" && st.flags.includes(n) && !d.notIren.includes(n)) flagNote = `<div class="fb" style="color:var(--muted)"><b>★</b><span>This idea does go back to Irenaeus.</span></div>`;
+  const ctrls = [];
+  if (b > -1){
+    ctrls.push(`<button class="mini" data-act="up" data-n="${n}" ${pos === 0 ? "disabled" : ""} aria-label="Move statement ${n} up">↑</button>`);
+    ctrls.push(`<button class="mini" data-act="down" data-n="${n}" ${pos === len - 1 ? "disabled" : ""} aria-label="Move statement ${n} down">↓</button>`);
+    ctrls.push(`<button class="mini" data-act="ret" data-n="${n}">Back to bank</button>`);
+  }
+  if (t === "ire") ctrls.push(`<button class="mini" data-act="flag" data-n="${n}" aria-pressed="${st.flags.includes(n)}">${st.flags.includes(n) ? "★ Not Irenaeus" : "☆ Not Irenaeus?"}</button>`);
+  return `<div class="card ${g} ${SEL === n ? "sel" : ""} ${hinted ? "hinted" : ""}" draggable="true" data-card="${n}" id="card-${t}-${n}" tabindex="0" role="button" aria-label="Statement ${n}">
+    <div class="num">${n}</div><div class="ctext">${esc(s.t)}</div>
+    ${ctrls.length ? `<div class="cfoot">${ctrls.join("")}</div>` : ""}${fb}${flagNote}</div>`;
+}
+
+function sortStats(t){
+  const d = D[t], st = S.sort[t], total = Object.keys(d.st).length;
+  let good = 0, ok = 0, bad = 0, placed = 0;
+  st.boxes.forEach((box, b) => box.forEach(n => { placed++; if (!st.checked.includes(n)) return; const g = grade(t, n, b); if (g === "good") good++; else if (g === "ok") ok++; else bad++; }));
+  const unchecked = placed - good - ok - bad;
+  return { total, good, ok, bad, placed, unplaced: total - placed, unchecked, done: placed === total && unchecked === 0 && bad === 0 };
+}
+
+function renderSort(){
+  const t = S.theo, d = D[t], st = S.sort[t];
+  const placed = new Set(st.boxes.flat());
+  const bank = Object.keys(d.st).map(Number).filter(n => !placed.has(n));
+  const k = sortStats(t);
+  let msg = "";
+  if (k.done) msg = `<p class="msg win">Every statement is in a good place. Now check the order within each box against the suggested order below.</p>`;
+  else if (k.good + k.ok + k.bad === 0) msg = `<p class="msg">Tap a statement, then choose its box (or drag it). Press <b>Check my sorting</b> whenever you like.</p>`;
+  else if (k.bad) msg = `<p class="msg">Red statements are in the wrong box. Read the hint on each and move it.</p>`;
+  else msg = `<p class="msg">No mistakes so far. ${k.unplaced ? k.unplaced + " still to place." : ""} ${k.unchecked ? "Check again to mark the ones you've just moved." : ""}</p>`;
+  let flagLine = "";
+  if (t === "ire"){
+    const found = st.flags.filter(n => d.notIren.includes(n)).length;
+    flagLine = `<span class="pill ${found === 2 ? "g" : ""}">☆ Not-Irenaeus statements found: ${st.checked.length ? found : "?"} of 2</span>`;
+  }
+  main.innerHTML = `
+    <section class="intro"><p><strong>Task ${d.task}:</strong> place all ${k.total} statements under the ${d.headings.length} headings, in the order you would use them in an essay. ${t === "aug" ? "Watch out: two statements say almost the same thing, and some could fit under more than one heading." : "Watch out: two statements are not Irenaeus at all. Mark them with ☆ Not Irenaeus?"}</p></section>
+    <section class="status" aria-live="polite">
+      <div class="tally">
+        <span class="pill g">✓ Best box: ${k.good}</span>
+        <span class="pill o">~ Acceptable: ${k.ok}</span>
+        <span class="pill b">✗ Try again: ${k.bad}</span>
+        <span class="pill">Still in the bank: ${k.unplaced}</span>${flagLine}
+      </div>${msg}
+      <div class="btnrow">
+        <button class="btn primary" data-act="check" ${k.placed ? "" : "disabled"}>Check my sorting</button>
+        <button class="btn" data-act="hint">Give me a hint</button>
+        <button class="btn ${resetArmed ? "warn" : ""}" data-act="reset">${resetArmed ? "Click again to clear everything" : "Start again"}</button>
+      </div>
+    </section>
+    <div class="sortgrid">
+      <section class="bank" data-drop="-1" aria-label="Statement bank">
+        <div class="panel-h"><h2>Statements</h2><span class="count">${bank.length} left</span></div>
+        <div class="stack">${bank.length ? bank.map(n => cardHTML(t, n, -1)).join("") : `<p class="empty">All statements placed.</p>`}</div>
+      </section>
+      <section class="boxes" aria-label="Headings">
+        ${d.headings.map((h, b) => `<div class="box ${SEL !== null ? "target" : ""}" data-drop="${b}" data-box="${b}">
+          <h3><span>${b + 1}. ${esc(h)}</span><small>${st.boxes[b].length}</small></h3>
+          <div class="stack">${st.boxes[b].map((n, p) => cardHTML(t, n, b, p, st.boxes[b].length)).join("")}</div>
+          ${k.done ? `<p class="order">Suggested order: <b>${d.order[b].join(" → ")}</b>${d.orderNotes[b] ? "<br>" + esc(d.orderNotes[b]) : ""}</p>` : ""}
+        </div>`).join("")}
+      </section>
+    </div>`;
+}
+
+function place(n, b){
+  const t = S.theo, st = S.sort[t];
+  st.boxes.forEach(box => { const i = box.indexOf(n); if (i > -1) box.splice(i, 1); });
+  if (b > -1) st.boxes[b].push(n);
+  st.checked = st.checked.filter(x => x !== n);
+  if (st.hintFor === n) st.hintFor = null;
+  SEL = null; save(); render();
+}
+
+main.addEventListener("click", e => {
+  if (S.tool !== "sort") return;
+  const t = S.theo, st = S.sort[t], d = D[t];
+  const act = e.target.closest("[data-act]");
+  if (act){
+    const a = act.dataset.act, n = Number(act.dataset.n);
+    if (a === "up" || a === "down"){ const [b, p] = whereIs(st, n); const q = a === "up" ? p - 1 : p + 1; if (q < 0 || q >= st.boxes[b].length) return; [st.boxes[b][p], st.boxes[b][q]] = [st.boxes[b][q], st.boxes[b][p]]; save(); render(); }
+    else if (a === "ret") place(n, -1);
+    else if (a === "flag"){ st.flags = st.flags.includes(n) ? st.flags.filter(x => x !== n) : st.flags.concat(n); save(); render(); }
+    else if (a === "check"){ st.checked = st.boxes.flat(); st.hintFor = null; SEL = null; save(); render(); }
+    else if (a === "hint"){
+      const wrong = []; st.boxes.forEach((box, b) => box.forEach(m => { if (grade(t, m, b) === "bad") wrong.push(m); }));
+      const bankNums = Object.keys(d.st).map(Number).filter(m => !st.boxes.flat().includes(m));
+      const pool = wrong.length ? wrong : bankNums.length ? bankNums : [];
+      if (!pool.length){ st.hintFor = null; render(); return; }
+      const next = pool.find(m => m !== st.hintFor) ?? pool[0];
+      st.hintFor = next; st.hints++; save(); render();
+      const el = document.getElementById(`card-${t}-${next}`); if (el) el.scrollIntoView({ block: "center", behavior: "smooth" });
+    }
+    else if (a === "reset"){
+      if (!resetArmed){ resetArmed = true; render(); clearTimeout(resetTimer); resetTimer = setTimeout(() => { resetArmed = false; if (S.tool === "sort") render(); }, 4000); }
+      else { resetArmed = false; S.sort[t] = blankSort(t); SEL = null; save(); render(); }
+    }
+    return;
+  }
+  const card = e.target.closest("[data-card]");
+  if (card){ const n = Number(card.dataset.card); SEL = SEL === n ? null : n; render(); return; }
+  const box = e.target.closest("[data-box]");
+  if (box && SEL !== null){ place(SEL, Number(box.dataset.box)); }
+});
+main.addEventListener("keydown", e => {
+  if (S.tool !== "sort") return;
+  const card = e.target.closest && e.target.closest("[data-card]");
+  if (card && e.target === card && (e.key === "Enter" || e.key === " ")){ e.preventDefault(); const n = Number(card.dataset.card); SEL = SEL === n ? null : n; render(); }
+  if (e.key === "Escape" && SEL !== null){ SEL = null; render(); }
+});
+/* drag and drop (mouse) */
+main.addEventListener("dragstart", e => { const c = e.target.closest && e.target.closest("[data-card]"); if (!c) return; e.dataTransfer.setData("text/plain", c.dataset.card); e.dataTransfer.effectAllowed = "move"; });
+main.addEventListener("dragover", e => { const z = e.target.closest && e.target.closest("[data-drop]"); if (!z) return; e.preventDefault(); document.querySelectorAll(".drop").forEach(x => x !== z && x.classList.remove("drop")); z.classList.add("drop"); });
+main.addEventListener("dragleave", e => { const z = e.target.closest && e.target.closest("[data-drop]"); if (z && !z.contains(e.relatedTarget)) z.classList.remove("drop"); });
+main.addEventListener("drop", e => { const z = e.target.closest && e.target.closest("[data-drop]"); if (!z) return; e.preventDefault(); const n = Number(e.dataTransfer.getData("text/plain")); if (n) place(n, Number(z.dataset.drop)); });
+
+function renderMovebar(){
+  if (S.tool !== "sort" || SEL === null){ movebar.hidden = true; movebar.innerHTML = ""; return; }
+  const t = S.theo, d = D[t], [b] = whereIs(S.sort[t], SEL);
+  movebar.hidden = false;
+  movebar.innerHTML = `<div class="inner"><div class="what">Move <b>statement ${SEL}</b> to: ${esc(d.st[SEL].t)}</div>
+    <div class="chips">${d.short.map((h, i) => `<button data-move="${i}" ${i === b ? "disabled" : ""}>${i + 1}. ${esc(h)}</button>`).join("")}
+    ${b > -1 ? `<button class="plain" data-move="-1">Back to bank</button>` : ""}<button class="plain" data-move="x">Cancel</button></div></div>`;
+}
+movebar.addEventListener("click", e => { const m = e.target.closest("[data-move]"); if (!m) return; if (m.dataset.move === "x"){ SEL = null; render(); return; } place(SEL, Number(m.dataset.move)); });
+
+/* ---------- narrative ---------- */
+const words = s => (s.trim().match(/\S+/g) || []).length;
+const quotes = s => (s.match(/[“"][^”"]{6,}[”"]/g) || []).length;
+
+function trackerHTML(t){
+  const d = D[t], all = S.narr[t].text.join("\n");
+  const w = words(all), cls = w > 400 ? "over" : w >= 300 ? "in" : "";
+  const label = w > 400 ? "Over 400. Can you tighten it?" : w >= 300 ? "In the target range." : `Aim for 300 to 400.`;
+  return `<section class="tracker" id="tracker" aria-live="polite">
+    <div><h4>Length</h4><div class="meter ${cls}"><i style="width:${Math.min(100, w / 450 * 100)}%"></i></div>
+      <div class="wcline"><b>${w}</b> words · ${label}<br>Quotations: <b>${quotes(all)}</b> (aim for 2 or more)</div></div>
+    <div><h4>Must include</h4><div class="terms">${d.must.map(([lab, re]) => `<span class="term ${re.test(all) ? "on" : ""}">${esc(lab)}</span>`).join("")}</div></div>
+  </section>`;
+}
+
+function renderNarr(){
+  const t = S.theo, d = D[t], N = S.narr[t], k = N.beat;
+  const list = d.beats.map((bt, i) => `<button data-beat="${i}" aria-current="${k === i}"><span class="bn">${i + 1}</span><span class="bt">${esc(bt.title)}</span><span class="done ${N.text[i].trim() ? "on" : ""}" id="dot-${i}"></span></button>`).join("")
+    + `<div class="sep"></div><button data-beat="7" aria-current="${k === 7}"><span class="bn">✓</span><span class="bt">Read it through</span><span></span></button>`;
+  let body;
+  if (k < 7){
+    const bt = d.beats[k], ti = N.ticks[k] || [];
+    const usedHere = bt.terms.filter(x => d.must.some(([l, re]) => l === x && re.test(N.text[k])));
+    body = `<article class="sheet">
+      <p class="eyebrow">Task ${d.narrTask} · ${esc(d.name)} · Beat ${k + 1} of 7</p>
+      <h2>${esc(bt.title)}</h2>
+      <ul class="qs">${bt.q.map(q => `<li>${esc(q)}</li>`).join("")}</ul>
+      <details id="d-ideas-${t}-${k}"><summary><span>Ideas to include <small>tick them off as you use them</small></span></summary><div class="dbody">
+        <ul class="ideas">${bt.ideas.map((x, i) => `<li><label for="idea-${t}-${k}-${i}"><input type="checkbox" id="idea-${t}-${k}-${i}" data-tick="${i}" ${ti.includes(i) ? "checked" : ""}><span>${esc(x)}</span></label></li>`).join("")}</ul>
+        <p class="note">Put these in your own words and link them with because, so, therefore.</p></div></details>
+      <details id="d-terms-${t}-${k}"><summary><span>Key terms and quotation</span></summary><div class="dbody">
+        ${bt.terms.length ? `<div class="terms">${bt.terms.map(x => `<span class="term ${usedHere.includes(x) ? "on" : ""}">${esc(x)}</span>`).join("")}</div>` : `<p class="note" style="margin-top:0">No must-include term belongs here, but set up the next beat clearly.</p>`}
+        ${bt.quote ? `<blockquote>${esc(bt.quote)}</blockquote>` : `<p class="note">No quotation is needed in this beat. Look on your sheet if you want one.</p>`}</div></details>
+      <details id="d-start-${t}-${k}"><summary><span>${t === "aug" ? "Sentence starters" : "Stuck? Sentence starters"} <small>${t === "aug" ? "optional" : "try without them first"}</small></span></summary><div class="dbody">
+        <ul class="starters">${bt.starters.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div></details>
+      <div class="write"><label for="txt-${t}-${k}">Write this part of your story</label>
+        <textarea id="txt-${t}-${k}" data-text="${k}" placeholder="Write 40–60 words for this beat…">${esc(N.text[k])}</textarea>
+        <div class="wbar"><span id="bw">${words(N.text[k])} words in this beat</span><span>Saved in this browser</span></div></div>
+      <div class="nav"><button class="btn" data-go="${k - 1}" ${k === 0 ? "disabled" : ""}>← Previous</button><button class="btn primary" data-go="${k + 1}">${k === 6 ? "Read it through →" : "Next beat →"}</button></div>
+    </article>`;
+  } else {
+    const paras = d.beats.map((bt, i) => N.text[i].trim() ? `<p class="para">${esc(N.text[i].trim())}</p>` : `<p class="para gap">[Beat ${i + 1}: ${esc(bt.title)} is still empty]</p>`).join("");
+    body = `<article class="sheet whole">
+      <p class="eyebrow">Task ${d.narrTask} · ${esc(d.name)}</p><h2>Your narrative</h2>
+      ${paras}
+      <div class="btnrow"><button class="btn primary" data-act="copy">Copy my narrative</button><span class="copyfb" id="copyfb"></span></div>
+      <textarea id="copyarea" readonly hidden></textarea>
+      <h3 style="font-family:var(--display);margin:22px 0 8px">Success criteria</h3>
+      <ul class="crit">${d.crit.map((c, i) => `<li><label for="crit-${t}-${i}"><input type="checkbox" id="crit-${t}-${i}" data-crit="${i}" ${N.crit[i] ? "checked" : ""}><span>${esc(c)}</span></label></li>`).join("")}</ul>
+      <div class="callout"><b>Challenge:</b> ${esc(d.challenge)}</div>
+    </article>`;
+  }
+  main.innerHTML = `
+    <section class="intro"><p><strong>Task ${d.narrTask}:</strong> tell ${t === "aug" ? "Augustine's theodicy as a story that looks <em>backwards</em> to a perfect creation that went wrong" : "the Irenaean theodicy as a story that looks <em>forwards</em>: humanity growing up from childhood to maturity"}. Write each beat in your own words. The hints get more detailed as you open them.</p></section>
+    <div class="narr"><nav class="beats" aria-label="Beats">${list}</nav><div class="desk">${trackerHTML(t)}${body}</div></div>`;
+}
+
+main.addEventListener("click", e => {
+  if (S.tool !== "narr") return;
+  const t = S.theo, N = S.narr[t];
+  const b = e.target.closest("[data-beat]"), g = e.target.closest("[data-go]");
+  if (b || g){ N.beat = Number((b || g).dataset[b ? "beat" : "go"]); save(); render(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+  const c = e.target.closest('[data-act="copy"]');
+  if (c){
+    const text = D[t].beats.map((_, i) => N.text[i].trim()).filter(Boolean).join("\n\n");
+    const fb = document.getElementById("copyfb"), ta = document.getElementById("copyarea");
+    const fallback = () => { ta.hidden = false; ta.value = text; ta.focus(); ta.select(); fb.textContent = "Select all and copy from the box below."; };
+    try { navigator.clipboard.writeText(text).then(() => { fb.textContent = "Copied. Paste it into your workbook."; }, fallback); } catch (err) { fallback(); }
+  }
+});
+main.addEventListener("change", e => {
+  if (S.tool !== "narr") return;
+  const t = S.theo, N = S.narr[t];
+  if (e.target.dataset.tick !== undefined){ const k = N.beat, i = Number(e.target.dataset.tick); const a = N.ticks[k] || []; N.ticks[k] = e.target.checked ? a.concat(i) : a.filter(x => x !== i); save(); }
+  if (e.target.dataset.crit !== undefined){ N.crit[e.target.dataset.crit] = e.target.checked; save(); }
+});
+main.addEventListener("input", e => {
+  if (S.tool !== "narr" || e.target.dataset.text === undefined) return;
+  const t = S.theo, N = S.narr[t], k = Number(e.target.dataset.text);
+  N.text[k] = e.target.value; save();
+  document.getElementById("tracker").outerHTML = trackerHTML(t);
+  document.getElementById("bw").textContent = `${words(N.text[k])} words in this beat`;
+  const dot = document.getElementById(`dot-${k}`); if (dot) dot.classList.toggle("on", !!N.text[k].trim());
+  const bt = D[t].beats[k];
+  document.querySelectorAll(`#d-terms-${t}-${k} .term`).forEach((el, i) => { const lab = bt.terms[i]; const m = D[t].must.find(([l]) => l === lab); el.classList.toggle("on", !!(m && m[1].test(N.text[k]))); });
+});
+
+render();
+</script>
+</body>
+</html>
