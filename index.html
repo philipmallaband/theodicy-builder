@@ -85,7 +85,8 @@ button{ font:inherit; color:inherit }
 .card.good .fb{ color:var(--good) } .card.ok .fb{ color:var(--ok) } .card.bad .fb{ color:var(--bad) }
 .card.hinted{ outline:3px dashed var(--ok); outline-offset:1px }
 .card.hinted .fb.hint{ color:var(--ink); background:var(--ok-soft) }
-.boxes{ display:flex; flex-direction:column; gap:12px }
+.boxes{ display:flex; flex-direction:column; gap:12px; position:sticky; top:12px; max-height:calc(100vh - 24px); max-height:calc(100dvh - 24px); overflow:auto; overscroll-behavior:contain; padding:2px 6px 12px 2px }
+.bank{ max-height:calc(100dvh - 24px); overscroll-behavior:contain }
 .box{ background:var(--surface); border:1.5px dashed var(--line); border-radius:14px; padding:12px; transition:background .15s, border-color .15s }
 .box.target{ cursor:pointer; border-style:solid; border-color:color-mix(in srgb, var(--acc) 55%, var(--line)) }
 .box.target:hover{ background:var(--acc-soft) }
@@ -170,7 +171,7 @@ textarea:focus{ outline:none; border-color:var(--acc); box-shadow:0 0 0 3px var(
 
 @media (max-width: 860px){
   .sortgrid{ grid-template-columns:minmax(0,1fr) }
-  .bank{ position:static; max-height:none }
+  .bank, .boxes{ position:static; max-height:none; overflow:visible; padding:0 }
   .narr{ grid-template-columns:minmax(0,1fr) }
   .beats{ position:static; flex-direction:row; flex-wrap:wrap }
   .beats button{ grid-template-columns:26px auto; padding:6px 8px }
