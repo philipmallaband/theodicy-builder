@@ -179,6 +179,23 @@ textarea:focus{ outline:none; border-color:var(--acc); box-shadow:0 0 0 3px var(
   .tracker{ grid-template-columns:minmax(0,1fr) }
 }
 @media (prefers-reduced-motion: reduce){ *{ transition:none !important } }
+.namerow{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:0 0 16px }
+.namerow label{ font-weight:700 }
+.namerow input{ font:inherit; padding:7px 10px; border:1px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink); min-width:0; flex:1 1 220px; max-width:340px }
+#printout{ display:none }
+@media print{
+  @page{ size:A4; margin:18mm }
+  :root{ padding:0 !important }
+  body{ background:#fff !important; color:#000 !important }
+  .wrap, #movebar{ display:none !important }
+  #printout{ display:block; font-family:Georgia, "Times New Roman", serif; font-size:12pt; line-height:1.6; color:#000 }
+  #printout h1{ font-family:var(--display); font-size:20pt; margin:0 0 2pt }
+  #printout .meta{ font-family:var(--body); font-size:10.5pt; color:#333; margin:0 0 16pt; border-bottom:1px solid #999; padding-bottom:8pt }
+  #printout p{ margin:0 0 10pt }
+  #printout .gap{ color:#666; font-style:italic }
+  #printout h2{ font-family:var(--body); font-size:12pt; margin:18pt 0 6pt }
+  #printout ul{ font-family:var(--body); font-size:10.5pt; padding-left:0; list-style:none }
+}
 </style>
 
 </head>
@@ -203,6 +220,7 @@ textarea:focus{ outline:none; border-color:var(--acc); box-shadow:0 0 0 3px var(
   <main id="main"></main>
 </div>
 <div id="movebar" hidden></div>
+<div id="printout"></div>
 
 <script>
 const D = {
@@ -334,6 +352,7 @@ ire: {
 
 /* ---------- state ---------- */
 const KEY = "theodicy-builder-v1";
+const STANDALONE = !/claude/i.test(location.hostname);
 function blankSort(t){ return { boxes: D[t].headings.map(() => []), checked: [], flags: [], hintFor: null, hints: 0 }; }
 function blankNarr(){ return { beat: 0, text: Array(7).fill(""), ticks: {}, crit: {} }; }
 function fresh(){ return { theo: "aug", tool: "narr", sort: { aug: blankSort("aug"), ire: blankSort("ire") }, narr: { aug: blankNarr(), ire: blankNarr() } }; }
@@ -544,8 +563,9 @@ function renderNarr(){
     const paras = d.beats.map((bt, i) => N.text[i].trim() ? `<p class="para">${esc(N.text[i].trim())}</p>` : `<p class="para gap">[Beat ${i + 1}: ${esc(bt.title)} is still empty]</p>`).join("");
     body = `<article class="sheet whole">
       <p class="eyebrow">Task ${d.narrTask} · ${esc(d.name)}</p><h2>Your narrative</h2>
+      <div class="namerow"><label for="stuname">Your name</label><input id="stuname" type="text" autocomplete="name" value="${esc(S.name || "")}" placeholder="For the printout"></div>
       ${paras}
-      <div class="btnrow"><button class="btn primary" data-act="copy">Copy my narrative</button><span class="copyfb" id="copyfb"></span></div>
+      <div class="btnrow">${STANDALONE ? `<button class="btn primary" data-act="print">Print or save as PDF</button><button class="btn" data-act="word">Download for Word</button>` : ""}<button class="btn ${STANDALONE ? "" : "primary"}" data-act="copy">Copy my narrative</button><span class="copyfb" id="copyfb"></span></div>
       <textarea id="copyarea" readonly hidden></textarea>
       <h3 style="font-family:var(--display);margin:22px 0 8px">Success criteria</h3>
       <ul class="crit">${d.crit.map((c, i) => `<li><label for="crit-${t}-${i}"><input type="checkbox" id="crit-${t}-${i}" data-crit="${i}" ${N.crit[i] ? "checked" : ""}><span>${esc(c)}</span></label></li>`).join("")}</ul>
@@ -562,6 +582,20 @@ main.addEventListener("click", e => {
   const t = S.theo, N = S.narr[t];
   const b = e.target.closest("[data-beat]"), g = e.target.closest("[data-go]");
   if (b || g){ N.beat = Number((b || g).dataset[b ? "beat" : "go"]); save(); render(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+  const pr = e.target.closest('[data-act="print"], [data-act="word"]');
+  if (pr){
+    const html = printHTML(t);
+    if (pr.dataset.act === "print"){ document.getElementById("printout").innerHTML = html; window.print(); }
+    else {
+      const doc = `<html><head><meta charset="utf-8"><title>${esc(D[t].name)} narrative</title><style>body{font-family:Georgia,serif;font-size:12pt;line-height:1.6} h1{font-family:Arial,sans-serif;font-size:18pt;margin:0} .meta{font-family:Arial,sans-serif;font-size:10pt;color:#444} h2{font-family:Arial,sans-serif;font-size:12pt} ul{font-family:Arial,sans-serif;font-size:10.5pt;list-style:none;padding-left:0} .gap{color:#777;font-style:italic}</style></head><body>${html}</body></html>`;
+      const blob = new Blob(["﻿", doc], { type: "application/msword" });
+      const a = document.createElement("a");
+      const who = (S.name || "").trim().replace(/[^\w\- ]+/g, "").replace(/\s+/g, "-");
+      a.href = URL.createObjectURL(blob); a.download = `${t === "aug" ? "Augustine" : "Irenaeus-Hick"}-narrative${who ? "-" + who : ""}.doc`;
+      document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    }
+    return;
+  }
   const c = e.target.closest('[data-act="copy"]');
   if (c){
     const text = D[t].beats.map((_, i) => N.text[i].trim()).filter(Boolean).join("\n\n");
@@ -576,7 +610,19 @@ main.addEventListener("change", e => {
   if (e.target.dataset.tick !== undefined){ const k = N.beat, i = Number(e.target.dataset.tick); const a = N.ticks[k] || []; N.ticks[k] = e.target.checked ? a.concat(i) : a.filter(x => x !== i); save(); }
   if (e.target.dataset.crit !== undefined){ N.crit[e.target.dataset.crit] = e.target.checked; save(); }
 });
+function printHTML(t){
+  const d = D[t], N = S.narr[t], all = N.text.join("\n");
+  const today = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+  const paras = d.beats.map((bt, i) => N.text[i].trim() ? `<p>${esc(N.text[i].trim()).replace(/\n+/g, "<br>")}</p>` : `<p class="gap">[${esc(bt.title)}: not written yet]</p>`).join("");
+  const terms = d.must.map(([l, re]) => (re.test(all) ? "✓ " : "☐ ") + esc(l)).join("&nbsp;&nbsp; ");
+  return `<h1>${t === "aug" ? "Augustine's theodicy" : "The Irenaean theodicy (Irenaeus and Hick)"}: my narrative</h1>
+    <p class="meta">${S.name ? "Name: " + esc(S.name) + " · " : ""}Task ${d.narrTask} · ${today} · ${words(all)} words · ${quotes(all)} quotations</p>
+    ${paras}
+    <h2>Key terms used</h2><ul><li>${terms}</li></ul>
+    <h2>Success criteria</h2><ul>${d.crit.map((c, i) => `<li>${N.crit[i] ? "✓" : "☐"} ${esc(c)}</li>`).join("")}</ul>`;
+}
 main.addEventListener("input", e => {
+  if (e.target.id === "stuname"){ S.name = e.target.value; save(); return; }
   if (S.tool !== "narr" || e.target.dataset.text === undefined) return;
   const t = S.theo, N = S.narr[t], k = Number(e.target.dataset.text);
   N.text[k] = e.target.value; save();
